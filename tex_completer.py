@@ -561,45 +561,51 @@ class TexCompleter(Completer):
 
         return found_citables
 
-
+###
 # Enable the file to be runnable as script, too.
+###
 if __name__ == "__main__":
-    import argparse
+    # Additional imports:
     from os import getcwd
-    from os.path import isabs
+    from os.path import isabs, expanduser
+    from argparse import ArgumentParser
 
-    arguments = argparse.ArgumentParser(prog="tex_completer",
+    # Command line options for the script.
+    options = ArgumentParser(prog="tex_completer",
             description="A semantic completer for YCM supporting TeX files")
 
-    arguments.add_argument('directory', type=str, nargs=1,
+    options.add_argument('directory', type=str, nargs=1,
             help="The base directory for the completer to look for files.")
 
-    args = arguments.parse_args()
-    dic = args.directory[0]
+    # Get the option and make properly usable.
+    directory = options.parse_args().directory[0]
+    if "~" in directory:
+        directory = expanduser(directory)
+    if not isabs(directory):
+        directory = join(getcwd(), directory)
 
-    directory = join(getcwd(), dic) if not isabs(dic) else dic
-
+    # Run the completer and get all citable and referable latex objects found in
+    # the directory.
     completer = TexCompleter({
         'min_num_of_chars_for_completion' : 1,
         'auto_trigger' : False
     })
 
     citables = completer._CollectCitables(
-            {'filepath' : join(directory, "foo.txt")}
+            {'filepath' : directory}
     )
     referables = completer._CollectReferables(
-            {'filepath' : join(directory, "foo.txt")}
+            {'filepath' : directory}
     )
 
-    print("The following things have been found!")
-
-    print("\nCitables (" + str(len(citables)) + "):")
+    print("Citables (" + str(len(citables)) + "):")
     for c in citables:
         print(u"{label}: {title} - {author} ({cite_type})".format(
             label=c.label, title=c.title, author=c.author,
             cite_type=c.cite_type))
 
-    print("\nReferables (" + str(len(referables)) + "):")
+    print("\n")
+    print("Referables (" + str(len(referables)) + "):")
     for r in referables:
         print(u"{label}: {name} ({ref_type})".format(label=r.label,
             name=r.name, ref_type=r.ref_type))
