@@ -86,15 +86,15 @@ class TexCompleter(Completer):
     ###
     # Action which the completer supports
     ###
-    # TODO: Make it an enum.
-    ACTION_NONE = 0
-    ACTION_REFERENCE = 1
-    ACTION_CITATION = 2
+    class Actions(object):
+        NoAction = 0
+        Reference = 1
+        Citation = 2
 
     def __init__(self, user_options):
         super(TexCompleter, self).__init__(user_options)
 
-        self._action = self.ACTION_NONE
+        self._action = self.Actions.NoAction
 
     def DebugInfo(self, request_data):
         file_name = request_data['filepath']
@@ -105,7 +105,7 @@ class TexCompleter(Completer):
         return FileTypes
 
     def ShouldUseNowInner(self, request_data):
-        self._action = self.ACTION_NONE
+        self._action = self.Actions.NoAction
 
         # Extract the last command
         current_line = request_data['line_value']
@@ -117,21 +117,21 @@ class TexCompleter(Completer):
         last_command = current_line[:word_start]
 
         if self._WantsReferable(last_command):
-            self._action = self.ACTION_REFERENCE
+            self._action = self.Actions.Reference
 
             return True
 
         elif self._WantsCitable(last_command):
-            self._action = self.ACTION_CITATION
+            self._action = self.Actions.Citation
 
             return True
 
         return False
 
     def ComputeCandidatesInner(self, request_data):
-        if self._action == self.ACTION_CITATION:
+        if self._action == self.Actions.Citation:
             return self._CollectCitables(request_data)
-        elif self._action == self.ACTION_REFERENCE:
+        elif self._action == self.Actions.Reference:
             return self._CollectReferables(request_data)
 
         return []
