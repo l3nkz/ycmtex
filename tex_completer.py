@@ -18,7 +18,7 @@
 
 from __future__ import print_function
 
-from os.path import dirname, join, isfile, splitext
+from os.path import dirname, join, isfile, isdir, splitext
 from os import listdir
 
 from ycmd.completers.completer import Completer
@@ -297,7 +297,12 @@ class TexCompleter(Completer):
         :return: A list of all referable objects which could be found.
         """
         referables = []
-        file_dir = dirname(request_data['filepath'])
+
+        # Get the directory where to search for the files.
+        file_dir = request_data['filepath']
+        if not isdir(file_dir):
+            # Use the corresponding directory if the file path points to a file.
+            file_dir = dirname(file_dir)
 
         for tex_file_name in self._GetAllTexFiles(file_dir):
             try:
@@ -327,9 +332,13 @@ class TexCompleter(Completer):
         :return: A list of all citable objects which could be found.
         """
         citables = []
-        file_dir = dirname(request_data['filepath'])
-
         bibliographies = []
+
+        # Get the directory where to search for the files.
+        file_dir = request_data['filepath']
+        if not isdir(file_dir):
+            # Use the corresponding directory if the file path points to a file.
+            file_dir = dirname(file_dir)
 
         # 1. Scan all found tex-files for a bibliography command.
         for tex_file_name in self._GetAllTexFiles(file_dir):
