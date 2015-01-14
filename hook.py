@@ -16,7 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-from ycmd.completers.tex.tex_completer import TexCompleter
+import sys
+from os.path import dirname
+
+current_dir = dirname(__file__)
+sys.path.append(current_dir)
+
+from tex_completer import TexCompleter
+
+sys.path.remove(current_dir)
 
 def GetCompleter(user_options):
     return TexCompleter(user_options)
