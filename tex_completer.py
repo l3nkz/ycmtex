@@ -80,6 +80,7 @@ class TexCompleter(Completer):
     CitationCommands = ["cite", "citep", "citev"]
     SectioningCommands = ["chapter", "section", "subsection", "subsubsection",
             "paragraph", "subparagraph"]
+    SpecialSectioningCommands = [("addchap", "chapter")]
 
     ###
     # List of supported VIM file types
@@ -538,6 +539,25 @@ class TexCompleter(Completer):
                             # search.
                             name = found_name
                             ref_type = command
+                            found = True
+                            break
+
+                    # Leave the search loop as the needed information is found.
+                    if found:
+                        break
+
+                    for command, command_type in self.SpecialSectioningCommands:
+                        # Try if this command can be found in the currently
+                        # examined content.
+                        found_name = self._ExtractFromCommand(current_content,
+                                command)
+
+                        if found_name is not None:
+                            # The command could be found. The name is already
+                            # extracted, so just use it. The reference type is
+                            # the command_type.
+                            name = found_name
+                            ref_type = command_type
                             found = True
                             break
 
