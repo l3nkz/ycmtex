@@ -21,11 +21,14 @@ from __future__ import print_function
 from os.path import dirname, join, isfile, isdir, splitext
 from os import listdir
 
+import logging
+
 from ycmd.completers.completer import Completer
 from ycmd.responses import BuildCompletionData
 
 import bibtexparser
 
+logger = logging.getLogger(__name__)
 
 class TexReferable:
 
@@ -328,15 +331,16 @@ class TexCompleter(Completer):
                 with open(tex_file_name, "r") as tex_file:
                     content = tex_file.read()
 
+                logger.debug("Get referables from {}".format(tex_file_name))
+
                 # Add all the referable objects which are found in the current
                 # file to the overall list.
                 referables.extend(self._GetAllReferables(content))
 
             except IOError as e:
                 # The file could somehow not be opened. Skip it.
-
-                # TODO: Log the exception.
-                pass
+                logger.warn("Could not open {} for inspection".format(
+                    tex_file_name))
 
         return referables
 
@@ -389,9 +393,8 @@ class TexCompleter(Completer):
 
             except IOError as e:
                 # The file could somehow not be opened.
-
-                # TODO: Log the exception.
-                pass
+                logger.warn("Could not open {} for inspection".format(
+                    tex_file_name))
 
         # 2. Parse the corresponding Bibtex-files.
         for bib in bibliographies:
@@ -403,21 +406,21 @@ class TexCompleter(Completer):
                     with open(bib_file_name, "r") as bib_file:
                         content = bib_file.read()
 
+                    logger.debug("Get citables from {}".format(bib_file_name))
+
                     # Add all citables found in this bibliography file to the
                     # overall list.
                     citables.extend(self._GetAllCitables(content))
 
                 except IOError as e:
                     # The file could somehow not be opened.
-
-                    # TODO: Log the exception.
-                    pass
+                    logger.warn("Could not open {} for inspection".format(
+                        bib_file_name))
 
             else:
                 # The file does not exist. Ignore it.
-
-                # TODO: Log that the file did not exist.
-                pass
+                logger.warn("Bibliography {} does not exist".format(
+                    bib_file_name))
 
         return citables
 
@@ -544,9 +547,8 @@ class TexCompleter(Completer):
 
         else:
             # The label could not be found in the file. Something went wrong!
-
-            # TODO: Log that this happened.
-            pass
+            logger.warn("Could not find additional information " + \
+                    "to referable {}".format(label))
 
         return (name, ref_type)
 
