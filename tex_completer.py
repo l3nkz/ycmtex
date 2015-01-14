@@ -30,9 +30,55 @@ import bibtexparser
 
 logger = logging.getLogger(__name__)
 
-class TexReferable:
+class TexObject:
 
-    def __init__(self, label, name="Unknown", ref_type="Unknown"):
+    def _smart_shorten(self, to_shorten, length, delta = 5):
+        """
+        Shorten a given string to the given length but on a smart way.
+
+        The specified length is not necessary the one which the string will have
+        after the shortening process. This is because of the way the method is
+        working. It tries to shorten the string at word boundaries if possible.
+        Hence the string can be a bit longer or shorter than specified.
+
+        :param to_shorten: The string which should be shortened.
+        :type to_shorten: str
+        :param length: The length to which the string should be shortened.
+        :type length: int
+        :param delta: The allowed delta which the string is allowed to be longer
+                      or shorter. (Defaults to 5)
+        :type delta: int
+        :rtype: str
+        :return: The smartly shortened string.
+        """
+        # As ' ...' is added to the end of the shortened string a little bit
+        # more space is needed.
+        goal_length = length - 4
+
+        if len(to_shorten) >= goal_length + delta:
+            # Find the boundaries of the word which gets shortened.
+            next_space = to_shorten.find(" ", length)
+            prev_space = to_shorten.rfind(" ", 0, length)
+
+            if next_space != -1 and next_space < goal_length + delta:
+                # 1. Try to keep the word in the result.
+                return to_shorten[:next_space] + " ..."
+            elif prev_space != -1 and prev_space > goal_length - delta:
+                # 2. Remove the whole word from the result.
+                return to_shorten[:prev_space] + " ..."
+            else:
+                # The word is to large to remove it completely. So it must be
+                # split.
+                return to_shorten[:goal_length - 1] + ". ..."
+        else:
+            return to_shorten
+
+
+class TexReferable(TexObject):
+
+    MaxNameLength = 50
+
+    def __init__(self, label, name="Unknown", ref_type="unknown"):
         """
         Constructor
 
@@ -41,16 +87,34 @@ class TexReferable:
         :param name: The actual name of the referable object.
         :type name: str
         :param ref_type: The type of the referable object.
+        :type ref_type: str
         """
         self.label = label
         self.name = name
         self.ref_type = ref_type
 
+    def shorten(self, ignore_name = "Unknown"):
+        """
+        Shorten the name of the referable object so that it is not too long.
 
-class TexCitable:
+        This method just alters the internal state of the object.
+
+        :param ignore_name: If the name is equal to the given one, shorten is
+                            skipped for the name. (Defaults to 'Unknown')
+        :type ignore_name: str
+        """
+        # Smartly shorten the name of the referable object if this name should
+        # not be ignored.
+        if self.name != ignore_name:
+            self.name = self._smart_shorten(self.name, self.MaxNameLength)
+
+
+class TexCitable(TexObject):
+
+    MaxTitleLength = 45
 
     def __init__(self, label, title="Unknown", author="Unknown",
-            cite_type="Unknown"):
+            cite_type="unknown"):
         """
         Constructor
 
@@ -68,6 +132,54 @@ class TexCitable:
         self.title = title
         self.author = author
         self.cite_type = cite_type
+
+    def shorten(self, ignore_title = "Unknown", ignore_author = "Unknown"):
+        """
+        Shorten the title and the author string of the citable object so that
+        they can be displayed properly.
+
+        This method just alters the internal state of the object.
+
+        :param ignore_title: If the title is equal to the given one, shorten is
+                             skipped for the title. (Defaults to 'Unknown')
+        :type ignore_title: str
+        :param ignore_author: If the author is equal to the given one, shorten
+                              is skipped for the author. (Defaults to 'Unknown')
+        :type ignore_author: str
+        """
+        # Smartly shorten the title if it should not be ignored.
+        if self.title != ignore_title:
+            self.title = self._smart_shorten(self.title, self.MaxTitleLength)
+
+        # Shorten the authors if they should not be ignored.
+        if self.author != ignore_author:
+            # If the author string contains multiple authors replace them with
+            # 'et. al.'.
+            if " and " in self.author:
+                # There are multiple authors mentioned. Replace them by 'et. al.'.
+                # And remember where the first author ended.
+                end_of_first_author = self.author.find(" and ")
+                self.author = self.author[:end_of_first_author].strip() + " et. al."
+            else:
+                # There is just one author. So set the variable to the end of the
+                # string.
+                end_of_first_author = len(self.author)
+
+            # Just keep the authors surname and not the first and middle names.
+            # There are two cases, either they are separated by a ',' or not. In the
+            # first case the surname is in front of the comma otherwise the surname
+            # is the last mentioned one.
+            if "," in self.author[:end_of_first_author]:
+                end_of_surname = self.author[:end_of_first_author].find(",")
+
+                # Build the resulting name.
+                self.author = self.author[:end_of_surname].strip() + \
+                        self.author[end_of_first_author:]
+            elif " " in self.author[:end_of_first_author]:
+                begin_of_surname = self.author[:end_of_first_author].rfind(" ")
+
+                # Build the resulting name.
+                self.author = self.author[begin_of_surname:]
 
 
 class TexCompleter(Completer):
@@ -456,8 +568,11 @@ class TexCompleter(Completer):
                 name, ref_type = self._GetAdditionalReferenceInformation(
                             file_content, label)
 
-                found_referables.append(TexReferable(label=label, name=name,
-                    ref_type=ref_type))
+                referable = TexReferable(label=label, name=name,
+                        ref_type=ref_type)
+                referable.shorten("No Name")
+
+                found_referables.append(referable)
 
         return found_referables
 
@@ -611,12 +726,15 @@ class TexCompleter(Completer):
         for entry in database.entries:
             # Extract the needed data from the entry.
             label = entry['ID']
-            title = entry['title'] if entry.has_key('title') else 'No Title'
-            author = entry['author'] if entry.has_key('author') else 'No Author'
+            title = entry['title'] if entry.has_key('title') else "No Title"
+            author = entry['author'] if entry.has_key('author') else "No Author"
             cite_type = entry['ENTRYTYPE']
 
-            found_citables.append(TexCitable(label=label, title=title,
-                author=author, cite_type=cite_type))
+            citable = TexCitable(label=label, title=title, author=author,
+                    cite_type=cite_type)
+            citable.shorten("No Title", "No Author")
+
+            found_citables.append(citable)
 
         return found_citables
 
