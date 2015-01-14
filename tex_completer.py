@@ -22,9 +22,9 @@ from os.path import dirname, join, isfile, isdir, splitext
 from os import listdir
 
 from ycmd.completers.completer import Completer
-from ycmd import responses
+from ycmd.responses import BuildCompletionData
 
-import bibtexparser
+from . import bibtexparser
 
 
 class TexReferable:
@@ -288,6 +288,25 @@ class TexCompleter(Completer):
 
     def _CollectReferables(self, request_data):
         """
+        Create the YCM compatible list of all referable objects which could be
+        found.
+
+        :param request_data: The data which YouCompleteMe passes to the
+                             completer.
+        :type request_data: dict[str,str]
+        :rtype: list[dict[str,str]]
+        :return: A list of all referable objects which could be found in a format
+                 which YCM understands.
+
+        """
+        referables = self._CollectReferablesInner(request_data)
+
+        return [ BuildCompletionData(r.label, extra_menu_info=r.name,
+            kind=r.ref_type ) for r in referables ]
+
+
+    def _CollectReferablesInner(self, request_data):
+        """
         Create a list of all referable objects which could be found.
 
         :param request_data: The data which YouCompleteMe passes to the
@@ -322,6 +341,24 @@ class TexCompleter(Completer):
         return referables
 
     def _CollectCitables(self, request_data):
+        """
+        Create the YCM compatible list of all citable objects which could be
+        found.
+
+        :param request_data: The data which YouCompleteMe passes to the
+                             completer.
+        :type request_data: dict[str,str]
+        :rtype: list[dict[str,str]]
+        :return: A list of all citable objects which could be found in a format
+                 which YCM understands.
+        """
+        citables = self._CollectCitablesInner(request_data)
+
+        return [ BuildCompletionData(c.label,
+            extra_menu_info=c.title+" from "+c.author,
+            kind=c.cite_type) for c in citables]
+
+    def _CollectCitablesInner(self, request_data):
         """
         Create a list of all citable objects which could be found.
 
@@ -591,10 +628,10 @@ if __name__ == "__main__":
         'auto_trigger' : False
     })
 
-    citables = completer._CollectCitables(
+    citables = completer._CollectCitablesInner(
             {'filepath' : directory}
     )
-    referables = completer._CollectReferables(
+    referables = completer._CollectReferablesInner(
             {'filepath' : directory}
     )
 
