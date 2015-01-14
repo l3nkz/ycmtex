@@ -24,7 +24,7 @@ from os import listdir
 from ycmd.completers.completer import Completer
 from ycmd.responses import BuildCompletionData
 
-from . import bibtexparser
+import bibtexparser
 
 
 class TexReferable:
@@ -102,14 +102,14 @@ class TexCompleter(Completer):
         return "TeX Completer for {}".format(file_name)
 
     def SupportedFiletypes(self):
-        return FileTypes
+        return self.FileTypes
 
     def ShouldUseNowInner(self, request_data):
         self._action = self.Actions.NoAction
 
         # Extract the last command
         current_line = request_data['line_value']
-        word_start = request_data['start_column']
+        word_start = request_data['start_column'] - 1
 
         # As according to the documentation the start_column points to the
         # begin of the word which is currently typed, the last command ends
