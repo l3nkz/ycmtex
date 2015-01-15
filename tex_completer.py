@@ -150,11 +150,15 @@ class TexReferable(TexObject):
         :param ignore_name: If the name is equal to the given one, shorten is
                             skipped for the name. (Defaults to 'Unknown')
         :type ignore_name: str
+        :rtype: TexReferable
+        :return: The current object
         """
         # Smartly shorten the name of the referable object if this name should
         # not be ignored.
         if self.name != ignore_name:
             self.name = self._smart_shorten(self.name, self.MaxNameLength)
+
+        return self
 
 
 @total_ordering
@@ -242,6 +246,8 @@ class TexCitable(TexObject):
         :param ignore_author: If the author is equal to the given one, shorten
                               is skipped for the author. (Defaults to 'Unknown')
         :type ignore_author: str
+        :rtype: TexCitable
+        :return: The current object
         """
         # Smartly shorten the title if it should not be ignored.
         if self.title != ignore_title:
@@ -262,20 +268,15 @@ class TexCitable(TexObject):
                 end_of_first_author = len(self.author)
 
             # Just keep the authors surname and not the first and middle names.
-            # There are two cases, either they are separated by a ',' or not. In the
-            # first case the surname is in front of the comma otherwise the surname
-            # is the last mentioned one.
+            # If they are separated by a "," otherwise keep the full name.
             if "," in self.author[:end_of_first_author]:
                 end_of_surname = self.author[:end_of_first_author].find(",")
 
                 # Build the resulting name.
                 self.author = self.author[:end_of_surname].strip() + \
                         self.author[end_of_first_author:]
-            elif " " in self.author[:end_of_first_author]:
-                begin_of_surname = self.author[:end_of_first_author].rfind(" ")
 
-                # Build the resulting name.
-                self.author = self.author[begin_of_surname:]
+        return self
 
 
 class TexCompleter(Completer):
