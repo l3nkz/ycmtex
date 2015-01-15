@@ -81,6 +81,19 @@ class TexReferable(TexObject):
 
     MaxNameLength = 50
 
+    AbbreviationMap = {
+            "unknown" : "u",
+            "chapter" : "C",
+            "section" : "S",
+            "subsection" : "s",
+            "subsubsection" : "U",
+            "paragraph" : "P",
+            "subparagraph" : "p",
+            "figure" : "F",
+            "table" : "T",
+            "lstlisting" : "L"
+    }
+
     def __init__(self, label, name="Unknown", ref_type="unknown"):
         """
         Constructor
@@ -95,6 +108,9 @@ class TexReferable(TexObject):
         self.label = label
         self.name = name
         self.ref_type = ref_type
+        self.abbreviation = self.AbbreviationMap[ref_type] if \
+                self.AbbreviationMap.has_key(ref_type) else \
+                self.AbbreviationMap["unknown"]
 
     def __eq__(self, other):
         """
@@ -166,6 +182,25 @@ class TexCitable(TexObject):
 
     MaxTitleLength = 45
 
+    AbbreviationMap = {
+            "unknown" : "u",
+            "article" : "A",
+            "book" : "B",
+            "booklet" : "b",
+            "conference" : "C",
+            "inbook" : "I",
+            "incollection" : "i",
+            "inproceedings" : "p",
+            "journal" : "J",
+            "manual" : "M",
+            "masterthesis" : "t",
+            "misc" : "m",
+            "phdthesis" : "T",
+            "proceedings" : "P",
+            "techreport" : "R",
+            "unpublished" : "U"
+    }
+
     def __init__(self, label, title="Unknown", author="Unknown",
             cite_type="unknown"):
         """
@@ -185,6 +220,9 @@ class TexCitable(TexObject):
         self.title = title
         self.author = author
         self.cite_type = cite_type
+        self.abbreviation = self.AbbreviationMap[cite_type] if \
+                self.AbbreviationMap.has_key(cite_type) else \
+                self.AbbreviationMap["unknown"]
 
     def __eq__(self, other):
         """
@@ -514,8 +552,10 @@ class TexCompleter(Completer):
         """
         referables = self._CollectReferablesInner(request_data)
 
-        return [ BuildCompletionData(r.label, extra_menu_info=r.name,
-            kind=r.ref_type ) for r in referables ]
+        return [ BuildCompletionData(
+            r.label,
+            extra_menu_info=r.abbreviation+" "+r.name
+            ) for r in referables ]
 
 
     def _CollectReferablesInner(self, request_data):
@@ -568,9 +608,10 @@ class TexCompleter(Completer):
         """
         citables = self._CollectCitablesInner(request_data)
 
-        return [ BuildCompletionData(c.label,
-            extra_menu_info=c.title+" from "+c.author,
-            kind=c.cite_type) for c in citables]
+        return [ BuildCompletionData(
+            c.label,
+            extra_menu_info=c.abbreviation+" "+c.author+" - "+c.title
+            ) for c in citables]
 
     def _CollectCitablesInner(self, request_data):
         """
@@ -874,14 +915,14 @@ if __name__ == "__main__":
 
     print("Citables (" + str(len(citables)) + "):")
     for c in citables:
-        print(u"{label}: {title} - {author} ({cite_type})".format(
+        print(u"{label}: {title} - {author} ({cite_type} - {abbr})".format(
             label=c.label, title=c.title, author=c.author,
-            cite_type=c.cite_type))
+            cite_type=c.cite_type, abbr=c.abbreviation))
 
     print("\n")
     print("Referables (" + str(len(referables)) + "):")
     for r in referables:
-        print(u"{label}: {name} ({ref_type})".format(label=r.label,
-            name=r.name, ref_type=r.ref_type))
+        print(u"{label}: {name} ({ref_type} - {abbr})".format(label=r.label,
+            name=r.name, ref_type=r.ref_type, abbr=r.abbreviation))
 
 # vim: ft=python tw=80 expandtab tabstop=4
