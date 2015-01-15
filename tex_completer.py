@@ -21,6 +21,8 @@ from __future__ import print_function
 from os.path import dirname, join, isfile, isdir, splitext
 from os import listdir
 
+from functools import total_ordering
+
 import logging
 
 from ycmd.completers.completer import Completer
@@ -74,6 +76,7 @@ class TexObject:
             return to_shorten
 
 
+@total_ordering
 class TexReferable(TexObject):
 
     MaxNameLength = 50
@@ -93,6 +96,51 @@ class TexReferable(TexObject):
         self.name = name
         self.ref_type = ref_type
 
+    def __eq__(self, other):
+        """
+        Compare for equality with another referable object.
+
+        Equality is reached if all three parameters (label, name, and ref_type)
+        are equal.
+
+        :param other: The object which should be tested for equality.
+        :type other: TexReferable
+        :rtype: bool
+        :return: Whether or not the objects are equal.
+        """
+        if not isinstance(other, TexReferable):
+            return ValueError("Equality can only be tested for objects with" +
+                    "the same type")
+
+        return self.label == other.label and self.name == other.name and \
+                self.ref_type == other.ref_type
+
+    def __lt__(self, other):
+        """
+        Determine if the current object is less than the other one.
+
+        The current object is less than the other one if it label is less, or if
+        the name is less, or if the ref_type is less than the one of the other
+        object.
+
+        :param other: The object which should be tested against.
+        :type other: TexReferable
+        :rtype: bool
+        :return: Whether or not the current object is less then the other one.
+        """
+        if not isinstance(other, TexReferable):
+            raise ValueError("Less than can only be tested for objects with" +
+                    "the same type.")
+
+        if self.label != other.label:
+            return self.label < other.label
+        elif self.name != other.name:
+            return self.name < other.name
+        elif self.ref_type != other.ref_type:
+            return self.ref_type < other.ref_type
+        else:
+            return False
+
     def shorten(self, ignore_name = "Unknown"):
         """
         Shorten the name of the referable object so that it is not too long.
@@ -109,6 +157,7 @@ class TexReferable(TexObject):
             self.name = self._smart_shorten(self.name, self.MaxNameLength)
 
 
+@total_ordering
 class TexCitable(TexObject):
 
     MaxTitleLength = 45
@@ -132,6 +181,53 @@ class TexCitable(TexObject):
         self.title = title
         self.author = author
         self.cite_type = cite_type
+
+    def __eq__(self, other):
+        """
+        Compare for equality with another citable object.
+
+        Equality is reached if all parameters (label, title, author, and cite_type)
+        are equal.
+
+        :param other: The object which should be tested for equality.
+        :type other: TexCitable
+        :rtype: bool
+        :return: Whether or not the objects are equal.
+        """
+        if not isinstance(other, TexCitable):
+            return ValueError("Equality can only be tested for objects with" +
+                    "the same type")
+
+        return self.label == other.label and self.title == other.title and \
+                self.author == other.author and self.cite_type == other.cite_type
+
+    def __lt__(self, other):
+        """
+        Determine if the current object is less than the other one.
+
+        The current object is less than the other one if it label is less, or if
+        the title is less, or if the author is less, or if the cite_type is less
+        than the one of the other object.
+
+        :param other: The object which should be tested against.
+        :type other: TexCitable
+        :rtype: bool
+        :return: Whether or not the current object is less then the other one.
+        """
+        if not isinstance(other, TexCitable):
+            raise ValueError("Less than can only be tested for objects with" +
+                    "the same type.")
+
+        if self.label != other.label:
+            return self.label < other.label
+        elif self.title != other.title:
+            return self.title < other.title
+        elif self.author != other.author:
+            return self.author < other.author
+        elif self.cite_type != other.cite_type:
+            return self.cite_type < other.cite_type
+        else:
+            return False
 
     def shorten(self, ignore_title = "Unknown", ignore_author = "Unknown"):
         """
@@ -455,7 +551,7 @@ class TexCompleter(Completer):
                 logger.warn("Could not open {} for inspection".format(
                     tex_file_name))
 
-        return referables
+        return sorted(referables)
 
     def _CollectCitables(self, request_data):
         """
@@ -535,7 +631,7 @@ class TexCompleter(Completer):
                 logger.warn("Bibliography {} does not exist".format(
                     bib_file_name))
 
-        return citables
+        return sorted(citables)
 
     def _GetAllTexFiles(self, directory):
         """
