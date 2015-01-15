@@ -727,9 +727,28 @@ class TexCompleter(Completer):
         :return: A tuple containing the name and the type of the corresponding
                  referable object.
         """
-        label_pos = file_content.find(label)
         name = "No Name"
         ref_type = "unknown"
+
+        # Search for the definition of the label in the text.
+        label_pos = 0
+
+        while True:
+            label_pos = file_content.find(label, label_pos)
+
+            # Was the label actually contained in the file?
+            if label_pos == -1:
+                break
+
+            # Check that this is actually the label definition and not a
+            # reference to it.
+            if file_content[:label_pos].endswith("label=") or \
+                    file_content[:label_pos].endswith(r"\label{"):
+                # This is actually the definition so break here.
+                break
+            else:
+                # Continue searching.
+                label_pos += len(label)
 
         if label_pos != -1:
             # The label was found in the file. Continue to search for additional
