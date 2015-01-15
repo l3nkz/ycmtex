@@ -703,7 +703,7 @@ class TexCompleter(Completer):
             label = self._ExtractFromOptionOrCommand(line, "label")
 
             if label is not None:
-                name, ref_type = self._GetAdditionalReferenceInformation(
+                name, ref_type = self._GetAdditionalReferableInformation(
                             file_content, label)
 
                 referable = TexReferable(label=label, name=name,
@@ -714,7 +714,7 @@ class TexCompleter(Completer):
 
         return found_referables
 
-    def _GetAdditionalReferenceInformation(self, file_content, label):
+    def _GetAdditionalReferableInformation(self, file_content, label):
         """
         Parse the given content for additional information to a given label of a
         referable object.
