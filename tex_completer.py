@@ -16,6 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
+###
+# Standard library imports.
+###
 from __future__ import print_function
 
 from os.path import dirname, join, isfile, isdir, splitext
@@ -25,10 +28,20 @@ from functools import total_ordering
 
 import logging
 
+###
+# YCMD imports.
+###
 from ycmd.completers.completer import Completer
 from ycmd.responses import BuildCompletionData
+from ycmd.utils import AddNearestThirdPartyFoldersToSysPath
 
+###
+# Third Party imports.
+###
+# First add the local 'third_party' folder to the package search path.
+AddNearestThirdPartyFoldersToSysPath(__file__)
 import bibtexparser
+
 
 logger = logging.getLogger(__name__)
 
