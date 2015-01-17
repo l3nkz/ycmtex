@@ -951,7 +951,7 @@ if __name__ == "__main__":
             label=c.label, title=c.title, author=c.author,
             cite_type=c.cite_type, abbr=c.abbreviation))
 
-    print("\n")
+    print("")
     print("Referables (" + str(len(referables)) + "):")
     for r in referables:
         print(u"{label}: {name} ({ref_type} - {abbr})".format(label=r.label,
