@@ -43,14 +43,14 @@ Limitations and Future Work
    current design.
 
 4. The completer currently only finds '.tex' files which are located in the same directory as
-   the one which is edited at the same moment. It may be interesting to also parse '\input'
+   the one which is edited at the moment. It may be interesting to also parse '\input'
    and '\include' commands and thereby somehow circumvent this problem. Or one could search also
    in parent and subdirectories and use the commands to build dependencies between the files and
    then only parse those files which are correlated to the current one.
 
 5. In the current version the completer parses all files it finds again if it is executed. This
    can be quite intensive if there a many '.tex' files. Hence, some kind of buffer could be used
-   here. However changes to other files which must be detected which can become tricky.
+   here. However changes to other files must be detected which can become tricky.
 
 6. At the moment the plugin only provides a completer. However I could also imagine a
    "GoToDefinition" functionality similar to the one of C++-completers. For this functionality the
