@@ -1,6 +1,3 @@
-[submodule "ycmd"]
-	path = .packages/ycmd
-	url = https://github.com/Valloric/ycmd.git
 [submodule "bibtexparser"]
 	path = third_party/bibtexparser
 	url = https://github.com/sciunto-org/python-bibtexparser.git
