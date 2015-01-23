@@ -88,6 +88,35 @@ class TexObject:
         else:
             return to_shorten
 
+    def completion(self):
+        """
+        The completion text which should be presented to the user of the
+        completer.
+
+        This method must be implemented by every TeX object which the completer
+        supports.
+
+        :rtype: str
+        :return: The completion text of this object.
+        """
+        raise NotImplementedError()
+
+    def extra_info(self, shortened = True):
+        """
+        The additional information for the completion which should be presented
+        to the user of the completer.
+
+        This method must be implemented by every TeX object which the completer
+        supports.
+
+        :param shortened: Whether or not the information text should be
+                          shortened or not. (Defaults to True)
+        :type shortened: bool
+        :rtype: str
+        :return: The additional information of this object.
+        """
+        raise NotImplementedError()
+
 
 @total_ordering
 class TexReferable(TexObject):
@@ -118,10 +147,11 @@ class TexReferable(TexObject):
         :param ref_type: The type of the referable object.
         :type ref_type: str
         """
-        self.label = label
-        self.name = name
-        self.ref_type = ref_type
-        self.abbreviation = self.AbbreviationMap[ref_type] if \
+        self._label = label
+        self._name = name
+        self._short_name = None
+        self._ref_type = ref_type
+        self._abbreviation = self.AbbreviationMap[ref_type] if \
                 self.AbbreviationMap.has_key(ref_type) else \
                 self.AbbreviationMap["unknown"]
 
@@ -141,8 +171,8 @@ class TexReferable(TexObject):
             return ValueError("Equality can only be tested for objects with" +
                     "the same type")
 
-        return self.label == other.label and self.name == other.name and \
-                self.ref_type == other.ref_type
+        return self._label == other._label and self._name == other._name and \
+                self._ref_type == other._ref_type
 
     def __lt__(self, other):
         """
@@ -161,12 +191,12 @@ class TexReferable(TexObject):
             raise ValueError("Less than can only be tested for objects with" +
                     "the same type.")
 
-        if self.label != other.label:
-            return self.label < other.label
-        elif self.name != other.name:
-            return self.name < other.name
-        elif self.ref_type != other.ref_type:
-            return self.ref_type < other.ref_type
+        if self._label != other._label:
+            return self._label < other._label
+        elif self._name != other._name:
+            return self._name < other._name
+        elif self._ref_type != other._ref_type:
+            return self._ref_type < other._ref_type
         else:
             return False
 
@@ -184,10 +214,30 @@ class TexReferable(TexObject):
         """
         # Smartly shorten the name of the referable object if this name should
         # not be ignored.
-        if self.name != ignore_name:
-            self.name = self._smart_shorten(self.name, self.MaxNameLength)
+        if self._name != ignore_name:
+            self._short_name = self._smart_shorten(self._name, self.MaxNameLength)
 
         return self
+
+    def completion(self):
+        """
+        :see TexObject.completion:
+        """
+        return self._label
+
+    def extra_info(self, shorten = True):
+        """
+        :see TexObject.completion:
+        """
+        if shorten:
+            if self._short_name is None:
+                name = self.shorten()._short_name
+            else:
+                name = self._short_name
+        else:
+            name = self._name
+
+        return self._abbreviation + " " + name
 
 
 @total_ordering
@@ -229,11 +279,13 @@ class TexCitable(TexObject):
                           'Unknown')
         :type cite_type: str
         """
-        self.label = label
-        self.title = title
-        self.author = author
-        self.cite_type = cite_type
-        self.abbreviation = self.AbbreviationMap[cite_type] if \
+        self._label = label
+        self._title = title
+        self._short_title = None
+        self._author = author
+        self._short_author = None
+        self._cite_type = cite_type
+        self._abbreviation = self.AbbreviationMap[cite_type] if \
                 self.AbbreviationMap.has_key(cite_type) else \
                 self.AbbreviationMap["unknown"]
 
@@ -253,8 +305,8 @@ class TexCitable(TexObject):
             return ValueError("Equality can only be tested for objects with" +
                     "the same type")
 
-        return self.label == other.label and self.title == other.title and \
-                self.author == other.author and self.cite_type == other.cite_type
+        return self._label == other._label and self._title == other._title and \
+                self._author == other._author and self._cite_type == other._cite_type
 
     def __lt__(self, other):
         """
@@ -273,14 +325,14 @@ class TexCitable(TexObject):
             raise ValueError("Less than can only be tested for objects with" +
                     "the same type.")
 
-        if self.label != other.label:
-            return self.label < other.label
-        elif self.title != other.title:
-            return self.title < other.title
-        elif self.author != other.author:
-            return self.author < other.author
-        elif self.cite_type != other.cite_type:
-            return self.cite_type < other.cite_type
+        if self._label != other._label:
+            return self._label < other._label
+        elif self._title != other._title:
+            return self._title < other._title
+        elif self._author != other._author:
+            return self._author < other._author
+        elif self._cite_type != other._cite_type:
+            return self._cite_type < other._cite_type
         else:
             return False
 
@@ -301,33 +353,57 @@ class TexCitable(TexObject):
         :return: The current object
         """
         # Smartly shorten the title if it should not be ignored.
-        if self.title != ignore_title:
-            self.title = self._smart_shorten(self.title, self.MaxTitleLength)
+        if self._title != ignore_title:
+            self._short_title = self._smart_shorten(self._title, self.MaxTitleLength)
 
         # Shorten the authors if they should not be ignored.
-        if self.author != ignore_author:
+        if self._author != ignore_author:
             # If the author string contains multiple authors replace them with
             # 'et. al.'.
-            if " and " in self.author:
+            if " and " in self._author:
                 # There are multiple authors mentioned. Replace them by 'et. al.'.
                 # And remember where the first author ended.
-                end_of_first_author = self.author.find(" and ")
-                self.author = self.author[:end_of_first_author].strip() + " et. al."
+                end_of_first_author = self._author.find(" and ")
+                self._short_author = self._author[:end_of_first_author].strip() + " et. al."
             else:
                 # There is just one author. So set the variable to the end of the
                 # string.
-                end_of_first_author = len(self.author)
+                end_of_first_author = len(self._author)
+                self._short_author = self._author
 
             # Just keep the authors surname and not the first and middle names.
             # If they are separated by a "," otherwise keep the full name.
-            if "," in self.author[:end_of_first_author]:
-                end_of_surname = self.author[:end_of_first_author].find(",")
+            if "," in self._author[:end_of_first_author]:
+                end_of_surname = self._author[:end_of_first_author].find(",")
 
                 # Build the resulting name.
-                self.author = self.author[:end_of_surname].strip() + \
-                        self.author[end_of_first_author:]
+                self._short_author = self._short_author[:end_of_surname].strip() + \
+                        self._short_author[end_of_first_author:]
 
         return self
+
+    def completion(self):
+        """
+        :see TexObject.completion:
+        """
+        return self._label
+
+    def extra_info(self, shorten = True):
+        """
+        :see TexObject.extra_info:
+        """
+        if shorten:
+            if self._short_author is None or \
+                    self._short_title is None:
+                self.shorten()
+
+            author = self._short_author
+            title = self._short_title
+        else:
+            author = self._author
+            title = self._title
+
+        return self._abbreviation + " " + author + " - " + title
 
 
 class TexCompleter(Completer):
@@ -566,8 +642,8 @@ class TexCompleter(Completer):
         referables = self._CollectReferablesInner(request_data)
 
         return [ BuildCompletionData(
-            r.label,
-            extra_menu_info=r.abbreviation+" "+r.name
+            r.completion(),
+            extra_menu_info=r.extra_info()
             ) for r in referables ]
 
 
@@ -622,8 +698,8 @@ class TexCompleter(Completer):
         citables = self._CollectCitablesInner(request_data)
 
         return [ BuildCompletionData(
-            c.label,
-            extra_menu_info=c.abbreviation+" "+c.author+" - "+c.title
+            c.completion(),
+            extra_menu_info=c.extra_info()
             ) for c in citables]
 
     def _CollectCitablesInner(self, request_data):
@@ -908,6 +984,7 @@ class TexCompleter(Completer):
 
         return found_citables
 
+
 ###
 # Enable the file to be runnable as script, too.
 ###
@@ -923,13 +1000,25 @@ if __name__ == "__main__":
 
     options.add_argument('directory', type=str, nargs=1,
             help="The base directory for the completer to look for files.")
+    print_type = options.add_mutually_exclusive_group()
+    print_type.add_argument('-s', '--shortened', default=False,
+            action='store_true', dest='shortened',
+            help="Present the information in their shortened version.")
+    print_type.add_argument('-f', '--full', default=False,
+            action='store_true', dest='full',
+            help="Present all information available.")
 
     # Get the option and make properly usable.
-    directory = options.parse_args().directory[0]
+    parsed_args = options.parse_args()
+
+    directory = parsed_args.directory[0]
     if "~" in directory:
         directory = expanduser(directory)
     if not isabs(directory):
         directory = join(getcwd(), directory)
+
+    shortened = parsed_args.shortened
+    full = parsed_args.full
 
     # Run the completer and get all citable and referable latex objects found in
     # the directory.
@@ -947,14 +1036,25 @@ if __name__ == "__main__":
 
     print("Citables (" + str(len(citables)) + "):")
     for c in citables:
-        print(u"{label}: {title} - {author} ({cite_type} - {abbr})".format(
-            label=c.label, title=c.title, author=c.author,
-            cite_type=c.cite_type, abbr=c.abbreviation))
+        if full:
+            print(u"{label}: {title} - {author} ({cite_type} - {abbr})".format(
+                label=c._label, title=c._title, author=c._author,
+                cite_type=c._cite_type, abbr=c._abbreviation)
+            )
+        else:
+            print(u"{completion}: {extra_info}".format(
+                completion=c.completion(), extra_info=c.extra_info(shortened))
+            )
 
     print("")
     print("Referables (" + str(len(referables)) + "):")
     for r in referables:
-        print(u"{label}: {name} ({ref_type} - {abbr})".format(label=r.label,
-            name=r.name, ref_type=r.ref_type, abbr=r.abbreviation))
+        if full:
+            print(u"{label}: {name} ({ref_type} - {abbr})".format(label=r._label,
+                name=r._name, ref_type=r._ref_type, abbr=r._abbreviation))
+        else:
+            print(u"{completion}: {extra_info}".format(
+                completion=r.completion(), extra_info=r.extra_info(shortened))
+            )
 
 # vim: ft=python tw=80 expandtab tabstop=4
