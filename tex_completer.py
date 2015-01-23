@@ -178,9 +178,9 @@ class TexReferable(TexObject):
         """
         Determine if the current object is less than the other one.
 
-        The current object is less than the other one if it label is less, or if
-        the name is less, or if the ref_type is less than the one of the other
-        object.
+        The current object is less than the other one if the label is less, or
+        if the name is less, or if the ref_type is less than the one of the
+        other object.
 
         :param other: The object which should be tested against.
         :type other: TexReferable
@@ -947,12 +947,12 @@ class TexCompleter(Completer):
         for line in file_content.splitlines():
             # Check whether a bibliography command is in the current line.
             for command in self.BibliographyCommands:
-                    biblographies = self._ExtractFromCommand(line, command)
+                biblographies = self._ExtractFromCommand(line, command)
 
-                    if biblographies is not None:
-                        # The command to define a bibliography is in this line.
-                        # Add then to the list.
-                        found_bibliographies.extend(biblographies.split(","))
+                if biblographies is not None:
+                    # The command to define a bibliography is in this line.
+                    # Add then to the list.
+                    found_bibliographies.extend(biblographies.split(","))
 
         return found_bibliographies
 
