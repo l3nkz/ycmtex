@@ -27,6 +27,7 @@ Currently the completer has support for the following commands:
 Installation
 ------------
 
+tbd.
 
 Limitations and Future Work
 ---------------------------
