@@ -869,7 +869,7 @@ class TexCompleter(Completer):
 
                     # Extract the name from the environment
                     env_begin = current_pos
-                    env_end = file_content.find(r"\end{" + ref_type + "", env_begin)
+                    env_end = file_content.find(r"\end{" + ref_type + "}", env_begin)
                     env_content = file_content[env_begin:env_end]
 
                     found_name = self._ExtractFromOptionOrCommand(env_content,
